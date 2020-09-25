@@ -25,7 +25,7 @@ Vec2* Inputs::GetKeyboardAxis()
     {
         y = -1;
     }
-    return new Vec2(x, y);
+    return new Vec2(x, -y);
 }
 
 Vec2* Inputs::GetJoystickAxis()
@@ -41,7 +41,7 @@ Vec2* Inputs::GetJoystickAxis()
     //por eso debemos hacer un filtro de las entradas de este.
     //en este caso el espectro de menor a -0.2 y mayor a 0.2 es el valor 1 osea que si vale.
     x = x > 0.2f ? 1 : x < -0.2f ? -1 : 0;
-    y = -(y > 0.2f ? 1 : y < -0.2f ? -1 : 0);
+    y = y > 0.2f ? 1 : y < -0.2f ? -1 : 0;
 
     return new Vec2(x, y);
 }

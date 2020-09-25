@@ -7,6 +7,7 @@ struct Inputs
     float x;
     float y;
 
+    //NO SE PARA QUE SIRVE
     Vec2* keyboardAxis;
     Vec2* joystickAxis;
 
@@ -14,6 +15,7 @@ struct Inputs
 
     Vec2* GetKeyboardAxis(); 
     Vec2* GetJoystickAxis(); 
+
 
 };
 

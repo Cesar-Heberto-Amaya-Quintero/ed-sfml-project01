@@ -1,86 +1,259 @@
-#include <iostream>
+#include<iostream>
 #include <SFML/Graphics.hpp>
 
 #include "Inputs.hh"
+#include "Character.hh"
+
 
 #define WINDOW_WIDTH 800
-#define WINDOW_HEIHGT 600
-#define GAME_NAME "RogueLike game"
+#define WINDOW_HEIGHT 600
+#define GAME_NAME "Roguelike game"
+#define TILES1 "assets/sprites/tiles1.png"
+#define TILES2 "assets/sprites/tiles2.png"
+#define TILES3 "assets/sprites/tiles3.png"
+#define SPRITE_SCALE 4.f
+#define FPS 120
+#define PLAYER_MOVESPEED 0.2f
 
-int main ()
+int main()
 {
-    
-    //Esto es la ventana de tu grafico
-    sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode(WINDOW_WIDTH,WINDOW_HEIHGT), GAME_NAME);
-    //Aqui se guardan los eventos dentro de la ventana, eje: teclado, mouse, etc.
+    //esto es la ventana de tu grafico
+    sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), GAME_NAME);
+    //aqui vas a guardar los eventos dentro de la ventana, eje: teclado, mouse, etc.
     sf::Event event;
 
-    Inputs* inputs = new Inputs();
+    sf::Clock* clock{new sf::Clock()};
+    float deltaTime{};
 
-    //declaramos variable de tipo texture
-    sf::Texture texture;
+    window->setFramerateLimit(FPS);
 
-    //Comprobamos que nuestra variable obtenga la imagen que le estamos dando
-    if(!texture.loadFromFile ("sprites/megaman.png")) 
+    Inputs* inputs{new Inputs()};
+
+    sf::Texture* tilesTexture1{new sf::Texture()};
+    tilesTexture1->loadFromFile(TILES1);
+
+    sf::Texture* tilesTexture2{new sf::Texture()};
+    tilesTexture2->loadFromFile(TILES2);
+
+    sf::Texture* tilesTexture3(new sf::Texture());
+    tilesTexture3->loadFromFile(TILES3);
+
+    const float tileBaseWidth{16 * SPRITE_SCALE};
+    const float tileBaseHeight{16 * SPRITE_SCALE};
+
+    sf::Sprite* wall{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 1,16* 1, 16,16)))};
+    wall->setScale(SPRITE_SCALE, SPRITE_SCALE);
+
+    sf::Sprite* wallB{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 2,16* 2, 16,16)))};
+    wallB->setScale(SPRITE_SCALE, SPRITE_SCALE);
+
+    sf::Sprite* wallR{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 1,16* 2, 16,16)))};
+    wallR->setScale(SPRITE_SCALE, SPRITE_SCALE);
+
+    sf::Sprite* tileGround1{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 1,16* 4, 16,16)))};
+    tileGround1->setScale(SPRITE_SCALE, SPRITE_SCALE);
+
+    sf::Sprite* tileGround2{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 2,16* 4, 16,16)))};
+    tileGround2->setScale(SPRITE_SCALE, SPRITE_SCALE);
+
+    sf::Sprite* wallWater{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 4,16* 3, 16,16)))};
+    wallWater->setScale(SPRITE_SCALE, SPRITE_SCALE);
+
+    sf::Sprite* floorWater{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 4,16* 4, 16,16)))};
+    floorWater->setScale(SPRITE_SCALE, SPRITE_SCALE);
+
+    sf::Sprite* wallFire{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 4,16* 1, 16,16)))};
+    wallFire->setScale(SPRITE_SCALE, SPRITE_SCALE);
+
+    sf::Sprite* floorFire{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 4,16* 2, 16,16)))};
+    floorFire->setScale(SPRITE_SCALE, SPRITE_SCALE);
+
+    sf::Sprite* floorStairs{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 3,16* 6, 16,16)))};
+    floorStairs->setScale(SPRITE_SCALE, SPRITE_SCALE);
+
+    sf::Sprite* floorBroken{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 1,16* 6, 16,16)))};
+    floorBroken->setScale(SPRITE_SCALE, SPRITE_SCALE);
+
+    sf::Sprite* floorSpike{new sf::Sprite(*tilesTexture3, * (new sf::IntRect(16*1, 16*11, 16,16)))};
+    floorSpike->setScale(SPRITE_SCALE, SPRITE_SCALE);
+    floorSpike->setPosition(16*16,16*20);
+
+    Animation* spikeAnimation {new Animation(11, 1,4, floorSpike, 300.f)};
+
+    std::vector<sf::Sprite > mapa;
+
+    //La letra w= wall, b= wallB, r= wallR, g=Ground1, f=ground2, s= wallWater, c=floorWater
+    // e= wallFire t=floorFire d=floorStairs x=floorBroken
+    char** map
     {
-        //Si no va a mandar mensaje de error
-        std::cout << "Load failed" << std::endl;
+        new char*[10]
+        {
+            new char[13] {'w', 'w', 'b', 'b', 'b', 'w', 'w', 'w', 'r', 'r', 'r', 'w', 'w'},
+            new char[13] {'w', 'w', 'w', 'w', 'w', 's', 'w', 'e', 'w', 'w', 'w', 'w', 'w'},
+            new char[13] {'g', 'g', 'g', 'g', 'g', 'c', 'd', 't', 'g', 'g', 'g', 'g', 'g'},
+            new char[13] {'f', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'f', 'g', 'x', 'g'},
+            new char[13] {'g', 'x', 'g', 'g', 'g', 'x', 'g', 'g', 'g', 'g', 'g', 'g', 'g'},
+            new char[13] {'g', 'g', 'f', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g'},
+            new char[13] {'g', 'g', 'g', 'g', 'g', 'g', 'f', 'g', 'g', 'x', 'g', 'g', 'g'},
+            new char[13] {'g', 'g', 'x', 'g', 'f', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'x'},
+            new char[13] {'g', 'g', 'g', 'g', 'g', 'g', 'x', 'g', 'f', 'g', 'g', 'f', 'g'},
+            new char[13] {'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g'},
+        }
+    };
 
-        system("pause");
+    for (int i{}; i<10;i++)
+    {
+        for (int j{}; j<13;j++)
+        {
+            char& n =*(*(map + i)+j);
+            //tileBaseWidht vale 64
+            switch (n)
+            {
+                case 'w':
+                    mapa.push_back(*wall);
+                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
+                    break;
+                case 'g':
+                    mapa.push_back(*tileGround1);
+                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
+                    break;
+                case 'r':
+                    mapa.push_back(*wallR);
+                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
+                    break;
+                case 'b':
+                    mapa.push_back(*wallB);
+                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
+                    break;
+                case 'f':
+                    mapa.push_back(*tileGround2);
+                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
+                    break;
+                case 's':
+                    mapa.push_back(*wallWater);
+                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
+                    break; 
+                case 'c':
+                    mapa.push_back(*floorWater);
+                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
+                    break;
+                case 'e':
+                    mapa.push_back(*wallFire);
+                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
+                    break; 
+                case 't':
+                    mapa.push_back(*floorFire);
+                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
+                    break;
+                case 'd':
+                    mapa.push_back(*floorStairs);
+                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
+                    break;
+                case 'x':
+                    mapa.push_back(*floorBroken);
+                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
+                    break;                             
+                default:
+                    break;  
+            }
+        }
     }
 
-    //Si exede el tamaño se repite la textura
-    texture.setRepeated(true);
-
-    //Creamos variable sprite
-    sf::Sprite sprite;
-    //Asignamos nuestra textura a la variable sprite
-    sprite.setTexture(texture);
-    //Seleccionamos parte de la imagen
-    sprite.setTextureRect(sf::IntRect(0,0,400,400));
-
-    //Cambiamos el color del sprite, se puede agregar un cuarto valor el cual es el alpha
-    //sprite.setColor(const sf::Color(0,0,255));
-
-    //Con esto movemos el sprite de lugar
-    sprite.move(100,100);
-
-    //Aquí le asignamos un nuevo centro al sprite, creando un vector2 que tiene sentido en x y y
-    sf::Vector2f centro;
-    centro.x = sprite.getTextureRect().width /2.f;
-    centro.y = sprite.getTextureRect().height /2.f;
-    sprite.setOrigin(centro);
 
 
+    //Main player
+    Character* character1{new Character(tilesTexture2, 16 * 1, 16 * 5, 16, 16, SPRITE_SCALE, SPRITE_SCALE)};
+   
+    character1->SetAnimations(
+        new Animation*[2]
+        {
+            new Animation(5, 0, 5, character1->GetSprite(), 40.f),
+            new Animation(6, 0, 5, character1->GetSprite(), 80.f)
+        }
+    );
 
-    //Esto es el loop principal, mientras la ventana este abierta, esto se va a ejecutar.
+    
+
+    character1->GetSprite()->setPosition(400, 300);
+
+    //esto es el loop principal, mientras la ventana este abierta, esto se va ejecutar.
     while (window->isOpen())
     {
-        //Mientras se esten ejecutando eventos dentro de la ventana, esto se va a repetir, ej: teclado, joystick, mouse, etc
+        //mientras se esten ejecutando eventos dentro de la ventana, esto se va repetir eje: teclado, joystick, mouse, etc
         while (window->pollEvent(event))
         {
-            //Si el evento fue la acción de cerrar la ventana, entonces cierra la aplicación
+            //si el evento fue la acción de cerrar la ventana, entonces termina la aplicación.
             if(event.type == sf::Event::Closed)
             {
                 window->close();
             }
         }
-
-    Vec2* keyboardAxis{inputs->GetKeyboardAxis()};
-    Vec2* joystickAxis{inputs->GetJoystickAxis()};
-    //std::cout << "keyboard axis x: " << keyboardAxis->x << " keyboard axis y: " << keyboardAxis->y << std::endl;
         
-    std::cout << "joystic axis x: " << joystickAxis->x << " joystic axis y: " << joystickAxis->y << std::endl;
+        Vec2* keyboardAxis{inputs->GetKeyboardAxis()};
+        Vec2* joystickAxis{inputs->GetJoystickAxis()};
+   
 
-    delete keyboardAxis;
-    delete joystickAxis;
+        if(sf::Joystick::isConnected(0))
+        {
+            character1->GetSprite()->move(joystickAxis->x * deltaTime * PLAYER_MOVESPEED, joystickAxis->y * deltaTime * PLAYER_MOVESPEED);
+            character1->FlipSpriteX(joystickAxis->x);
+            if (std::abs(joystickAxis->x) > 0 || std::abs(joystickAxis->y)>0)
+            {
+                //Run
+                character1->GetAnimation(1)->Play(deltaTime);
+            }
+            else
+            {
+                {
+                    //idle
+                    character1->GetAnimation(0)->Play(deltaTime);
+                }
+            }
+            
+        }
+        else
+        {
+            character1->GetSprite()->move(keyboardAxis->x * deltaTime * PLAYER_MOVESPEED, keyboardAxis->y * deltaTime * PLAYER_MOVESPEED);
+            character1->FlipSpriteX(keyboardAxis->x);
 
-    window->clear(sf::Color(100, 150, 30));
+            if (std::abs(keyboardAxis->x) > 0 || std::abs(keyboardAxis->y)>0)
+            {
+                //Run
+                character1->GetAnimation(1)->Play(deltaTime);
+            }
+            else
+            {
+                {
+                    //idle
+                    character1->GetAnimation(0)->Play(deltaTime);
+                }
+            }
+        }
 
-    window->draw(sprite); 
+        //character1->GetAnimation(1)->Play(deltaTime);
 
-    window->display();
         
+
+        window->clear(*(new sf::Color(150, 100, 0, 255)));//limpiar la pantalla
+        for (auto& tile: mapa)
+        {
+            window->draw(tile);
+        }
+        
+        spikeAnimation->Play(deltaTime);
+        window->draw(*floorSpike);
+        //window->draw(*tileGround1);
+        window->draw(*character1->GetSprite());
+        window->display(); //mostrar en pantalla lo que se va dibujar
+
+        sf::Time timeElapsed = clock->getElapsedTime();
+        deltaTime = timeElapsed.asMilliseconds();
+        clock->restart();
+
+        //std::cout << "delta time: " << deltaTime << std::endl;
+
+        delete keyboardAxis;
+        delete joystickAxis;
     }
     
     return 0;
