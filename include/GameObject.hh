@@ -1,7 +1,6 @@
 #include<SFML/Graphics.hpp>
-#include "Rigidbody.hh"
 
-class BoxCollider
+class GameObject
 {
     private:
         sf::RectangleShape* boxShape;
@@ -10,23 +9,18 @@ class BoxCollider
         sf::Color* borderColor;
         float width;
         float height;
-        Rigidbody* rigidbody;
         sf::Sprite* parentSprite;
+        //Rigidbody* rigidbody;
 
         void InitShape();
         
     public:
-        BoxCollider(float, float, sf::Color*, float, float, Rigidbody*, sf::Sprite*);
-        ~BoxCollider();
+        GameObject(float, float, sf::Color*, float, float, sf::Sprite*);
+        ~GameObject();
 
         sf::RectangleShape* GetBoxShape() const;
 
-        void UpdatePhysics();
 
-        void Move(b2Vec2*);
-
-        b2Vec2 GetBodyPosition() const;
 
         //b2Body GetBody();
 };
-
