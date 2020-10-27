@@ -1,10 +1,13 @@
 #include<iostream>
 #include <SFML/Graphics.hpp>
 #include <box2d/box2d.h>
+#include <fstream>
 
 #include "Inputs.hh"
 #include "Character.hh"
 #include "GameObject.hh"
+#include "Maze.hh"
+#include "Tile.hh"
 
 
 #define WINDOW_WIDTH 800
@@ -47,39 +50,7 @@ int main()
     const float tileBaseWidth{16 * SPRITE_SCALE};
     const float tileBaseHeight{16 * SPRITE_SCALE};
 
-    sf::Sprite* wall{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 1,16* 1, 16,16)))};
-    wall->setScale(SPRITE_SCALE, SPRITE_SCALE);
-
-    sf::Sprite* wallB{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 2,16* 2, 16,16)))};
-    wallB->setScale(SPRITE_SCALE, SPRITE_SCALE);
-
-    sf::Sprite* wallR{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 1,16* 2, 16,16)))};
-    wallR->setScale(SPRITE_SCALE, SPRITE_SCALE);
-
-    sf::Sprite* tileGround1{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 1,16* 4, 16,16)))};
-    tileGround1->setScale(SPRITE_SCALE, SPRITE_SCALE);
-
-    sf::Sprite* tileGround2{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 2,16* 4, 16,16)))};
-    tileGround2->setScale(SPRITE_SCALE, SPRITE_SCALE);
-
-    sf::Sprite* wallWater{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 4,16* 3, 16,16)))};
-    wallWater->setScale(SPRITE_SCALE, SPRITE_SCALE);
-
-    sf::Sprite* floorWater{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 4,16* 4, 16,16)))};
-    floorWater->setScale(SPRITE_SCALE, SPRITE_SCALE);
-
-    sf::Sprite* wallFire{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 4,16* 1, 16,16)))};
-    wallFire->setScale(SPRITE_SCALE, SPRITE_SCALE);
-
-    sf::Sprite* floorFire{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 4,16* 2, 16,16)))};
-    floorFire->setScale(SPRITE_SCALE, SPRITE_SCALE);
-
-    sf::Sprite* floorStairs{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 3,16* 6, 16,16)))};
-    floorStairs->setScale(SPRITE_SCALE, SPRITE_SCALE);
-
-    sf::Sprite* floorBroken{new sf::Sprite(*tilesTexture3, *(new sf::IntRect(16* 1,16* 6, 16,16)))};
-    floorBroken->setScale(SPRITE_SCALE, SPRITE_SCALE);
-
+    //TILES
     sf::Sprite* floorSpike{new sf::Sprite(*tilesTexture3, * (new sf::IntRect(16*1, 16*11, 16,16)))};
     floorSpike->setScale(SPRITE_SCALE, SPRITE_SCALE);
     floorSpike->setPosition(16*16,16*20);
@@ -104,86 +75,12 @@ int main()
 
     Animation* spikeAnimation {new Animation(11, 1,4, floorSpike, 300.f)};
 
-    std::vector<sf::Sprite > mapa;
-
     //La letra w= wall, b= wallB, r= wallR, g=Ground1, f=ground2, s= wallWater, c=floorWater
     // e= wallFire t=floorFire d=floorStairs x=floorBroken
-    char** tile
-    {
-        new char*[10]
-        {
-            new char[13] {'w', 'w', 'b', 'b', 'b', 'w', 'w', 'w', 'r', 'r', 'r', 'w', 'w'},
-            new char[13] {'w', 'w', 'w', 'w', 'w', 's', 'w', 'e', 'w', 'w', 'w', 'w', 'w'},
-            new char[13] {'g', 'g', 'g', 'g', 'g', 'c', 'd', 't', 'g', 'g', 'g', 'g', 'g'},
-            new char[13] {'f', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'f', 'g', 'x', 'g'},
-            new char[13] {'g', 'x', 'g', 'g', 'g', 'x', 'g', 'g', 'g', 'g', 'g', 'g', 'g'},
-            new char[13] {'g', 'g', 'f', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g'},
-            new char[13] {'g', 'g', 'g', 'g', 'g', 'g', 'f', 'g', 'g', 'x', 'g', 'g', 'g'},
-            new char[13] {'g', 'g', 'x', 'g', 'f', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'x'},
-            new char[13] {'g', 'g', 'g', 'g', 'g', 'g', 'x', 'g', 'f', 'g', 'g', 'f', 'g'},
-            new char[13] {'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g'},
-        }
-    };
-
-    for (int i{}; i<10;i++)
-    {
-        for (int j{}; j<13;j++)
-        {
-            char& n =*(*(tile + i)+j);
-            //tileBaseWidht vale 64
-            switch (n)
-            {
-                case 'w':
-                    mapa.push_back(*wall);
-                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
-                    break;
-                case 'g':
-                    mapa.push_back(*tileGround1);
-                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
-                    break;
-                case 'r':
-                    mapa.push_back(*wallR);
-                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
-                    break;
-                case 'b':
-                    mapa.push_back(*wallB);
-                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
-                    break;
-                case 'f':
-                    mapa.push_back(*tileGround2);
-                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
-                    break;
-                case 's':
-                    mapa.push_back(*wallWater);
-                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
-                    break; 
-                case 'c':
-                    mapa.push_back(*floorWater);
-                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
-                    break;
-                case 'e':
-                    mapa.push_back(*wallFire);
-                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
-                    break; 
-                case 't':
-                    mapa.push_back(*floorFire);
-                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
-                    break;
-                case 'd':
-                    mapa.push_back(*floorStairs);
-                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
-                    break;
-                case 'x':
-                    mapa.push_back(*floorBroken);
-                    mapa.back().setPosition(tileBaseWidth* j, tileBaseHeight* i);
-                    break;                             
-                default:
-                    break;  
-            }
-        }
-    }
 
 
+    unsigned int N{10}, M{13};
+    Maze* maze1{new Maze(N,M,SPRITE_SCALE,16,tilesTexture3,"assets/mazes/maze1.txt")};
 
     //Main player
     Character* character1{new Character(tilesTexture2, 16 * 1, 16 * 5, 16, 16, SPRITE_SCALE, SPRITE_SCALE, world,window),};
@@ -268,9 +165,9 @@ int main()
         
 
         window->clear(*(new sf::Color(150, 100, 0, 255)));//limpiar la pantalla
-        for (auto& tile: mapa)
+        for (auto& tile: *maze1->GetContainer())
         {
-            window->draw(tile);
+            window->draw(*tile->GetSprite());
         }
 
         
