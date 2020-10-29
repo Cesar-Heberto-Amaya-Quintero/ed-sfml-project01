@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #include "Vec2.hh"

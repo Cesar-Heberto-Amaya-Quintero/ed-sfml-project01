@@ -1,30 +1,54 @@
 #include "GameObject.hh"
 
-GameObject::GameObject(float posX, float posY, sf::Color* borderColor, float width, float height,  sf::Sprite* parentSprite)
+GameObject::GameObject(sf::Texture*& texture, float cropPosX, float cropPosY, float cropWidth,
+ float cropHeight, float scaleX, float scaleY, b2Vec2* position,b2BodyType bodyType ,b2World*& world, sf::RenderWindow*& window)
 {
-    this->posX = posX;
-    this->posY = posY;
-    this->borderColor= borderColor;
-    this->width= width;
-    this->height= height;
-    this->parentSprite= parentSprite;
+    this->texture = texture;
+    this->cropPosX = cropPosX;
+    this->cropPosY = cropPosY;
+    this->cropWidth = cropWidth;
+    this->cropHeight = cropHeight;
+    this->scaleX = scaleX;
+    this->scaleY = scaleY;
+    this->window = window;
 
-    InitShape();
+    tileBaseWidth = cropPosX * scaleX;
+    tileBaseHeight = cropPosY * scaleY;
+
+    InitSprite(world, position, bodyType);
 }
 
 GameObject::~GameObject(){}
 
-void GameObject::InitShape()
+void GameObject::InitSprite(b2World*& world, b2Vec2*position, b2BodyType bodyType)
 {
-    boxShape = new sf::RectangleShape(*(new sf::Vector2f(posX,posY)));
-    boxShape->setSize(*(new sf::Vector2f(width,height)));
-    boxShape->setFillColor(sf::Color::Transparent);
-    boxShape->setOutlineColor(*borderColor);
-    boxShape->setOutlineThickness(0.5f);
+    sprite = new sf::Sprite(*texture, *(new sf::IntRect(cropPosX, cropPosY, cropWidth, cropHeight)));
+    sprite->setScale(*(new sf::Vector2f(scaleX, scaleY)));
+
+    boxCollider = new BoxCollider(position->x, position->y, new sf::Color(0, 255, 0, 255), cropWidth, cropHeight,
+    new Rigidbody(world, bodyType, position, (cropWidth * scaleX) / 2, (cropHeight * scaleY) / 2, 1, 0, 0),
+    sprite);
+    boxCollider->GetBoxShape()->setScale(scaleX,scaleY);
 }
 
-sf::RectangleShape* GameObject::GetBoxShape() const
+sf::Sprite* GameObject::GetSprite()
 {
-    return boxShape;
+    return sprite;
 }
 
+void GameObject::SetPosition(float posX, float posY)
+{
+    sprite->setPosition(posX, posY);
+}
+
+void GameObject::Update()
+{
+    boxCollider->UpdatePhysics();
+    window->draw(*sprite);
+    window->draw(*boxCollider->GetBoxShape());
+}
+
+BoxCollider* GameObject::GetCollider() const
+{
+    return boxCollider;
+}
